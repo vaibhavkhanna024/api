@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="c06caf48-7eb4-4429-8dde-7af2f8317a6c" responseTimeout="9999999">
+		<http:request-connection host="localhost" port="8083" />
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4df54f87-8f71-4f3c-90f8-4676a165944d" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="process_apiFlow" doc:id="a67fb630-6809-45e2-bc52-b75117a68eb6" >
+		<http:listener doc:name="Listener" doc:id="97b067de-642f-45ee-8af1-f98a6757c549" config-ref="HTTP_Listener_config" path="/papi">
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]" />
+		</http:listener>
+		<http:request method="POST" doc:name="Request" doc:id="04bf56a8-ac0a-4caa-aef0-f4efc8dc203c" config-ref="HTTP_Request_configuration" path="/sapi"/>
+		<logger level="INFO" doc:name="Logger" doc:id="1a1ad97e-a4f3-4a52-a467-0bd776045002" message="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="43b9f20c-f8c1-4a2e-9a41-9ee04ab85355" >
+				<set-payload value="#[error.errorMessage.payload]" doc:name="Set Payload" doc:id="02301b31-dfb3-4527-be19-5c2d7986ff8b" />
+				<set-variable value="#[error.muleMessage.attributes.StatusCode]" doc:name="Set Variable" doc:id="4d7e1f59-bd76-4bd5-83dd-128b0f8685b8" variableName="httpStatus"/>
+				<logger level="INFO" doc:name="Logger" doc:id="4627f5f4-61d8-4d14-9dd7-fb1839098f01" message="#[payload]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
